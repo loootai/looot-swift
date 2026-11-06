@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  leak-scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: bash scripts/leak-scan.sh .
+
+  linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ["5.9", "5.10", "6.0"]
+    container: swift:${{ matrix.swift }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: swift build
+      - run: swift test
+
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: swift --version
+      - run: swift build
+      - run: swift test

@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+*.xcodeproj
+xcuserdata/
+DerivedData/
+Package.resolved
+.env
+.env.*
+!.env.example
+.DS_Store
+scratch/

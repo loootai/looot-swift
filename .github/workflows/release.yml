@@ -1,0 +1,43 @@
+# Runs when a semver tag is pushed (0.1.0 or v0.1.0). Swift has no package upload: the Swift
+# Package Index reads the tag from the public repo. This workflow tests the tag and creates the
+# GitHub release with the notes from CHANGELOG.md. No registry secret is needed.
+name: release
+
+on:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+", "v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Version constant matches the tag
+        run: |
+          want="${GITHUB_REF_NAME#v}"
+          grep -q "public let loootVersion = \"$want\"" Sources/Looot/Client.swift || { echo "loootVersion is not $want"; exit 1; }
+      - run: swift build
+      - run: swift test
+
+  release:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## " v " " { on = 1; next }
+            on && /^## / { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "no CHANGELOG section for $version"; exit 1; }
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
