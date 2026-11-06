@@ -86,10 +86,11 @@ extension JSONValue: Codable {
         let c = try decoder.singleValueContainer()
         if c.decodeNil() {
             self = .null
+        } else if let n = try? c.decode(Double.self) {
+            // Number before Bool: older Foundation decodes the numbers 0 and 1 as Bool.
+            self = .number(n)
         } else if let b = try? c.decode(Bool.self) {
             self = .bool(b)
-        } else if let n = try? c.decode(Double.self) {
-            self = .number(n)
         } else if let s = try? c.decode(String.self) {
             self = .string(s)
         } else if let a = try? c.decode([JSONValue].self) {

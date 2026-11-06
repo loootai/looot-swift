@@ -199,7 +199,7 @@ public final class Looot: Sendable {
     }
 
     /// Returns one endpoint's inputs, price and hints. Takes an endpoint id, not `job:<id>`. Free.
-    public func inspect(_ endpointId: String) async throws -> Operation {
+    public func inspect(_ endpointId: String) async throws -> EndpointDetail {
         try await get("/v1/operations/" + segment(endpointId), [], auth: true)
     }
 
@@ -539,4 +539,9 @@ private func encodeQuery(_ items: [(String, String?)]) -> String? {
     }
     if pairs.isEmpty { return nil }
     return pairs.sorted { $0.0 < $1.0 }.map { percentEncode($0.0) + "=" + percentEncode($0.1) }.joined(separator: "&")
+}
+
+extension Looot: CustomReflectable {
+    /// Shows no children, so `dump(client)` and the debugger never print the token.
+    public var customMirror: Mirror { Mirror(self, children: [:]) }
 }

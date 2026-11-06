@@ -317,7 +317,7 @@ public struct CatalogEndpointsPage: JSONBacked {
 // MARK: - Inspect
 
 /// `GET /v1/operations/{endpointId}`: inputs, price and hints for one endpoint.
-public struct Operation: JSONBacked {
+public struct EndpointDetail: JSONBacked {
     public let raw: JSONValue
     public init(raw: JSONValue) { self.raw = raw }
     public var endpoint: OperationEndpoint? { raw.one("endpoint", as: OperationEndpoint.self) }
@@ -331,7 +331,7 @@ public struct Operation: JSONBacked {
     public var usageHints: JSONValue { raw["usageHints"] }
 }
 
-/// The endpoint part of an `Operation`.
+/// The endpoint part of an `EndpointDetail`.
 public struct OperationEndpoint: JSONBacked {
     public let raw: JSONValue
     public init(raw: JSONValue) { self.raw = raw }
