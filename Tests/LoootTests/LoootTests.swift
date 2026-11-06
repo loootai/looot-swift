@@ -742,3 +742,21 @@ final class JSONValueTests: XCTestCase {
         XCTAssertEqual(v["price"].doubleValue, 0.5)
     }
 }
+
+#if canImport(Darwin)
+final class RedirectGuardTests: XCTestCase {
+    func testCrossHostRedirectDropsAuthorization() {
+        var next = URLRequest(url: URL(string: "https://bucket.example.com/file.png")!)
+        next.setValue("Bearer secret", forHTTPHeaderField: "Authorization")
+        let out = RedirectGuard.guarded(next, from: URL(string: "https://api.looot.ai/v1/media/x"))
+        XCTAssertNil(out.value(forHTTPHeaderField: "Authorization"))
+    }
+
+    func testSameHostRedirectKeepsAuthorization() {
+        var next = URLRequest(url: URL(string: "https://api.looot.ai/v1/media/y")!)
+        next.setValue("Bearer secret", forHTTPHeaderField: "Authorization")
+        let out = RedirectGuard.guarded(next, from: URL(string: "https://api.looot.ai/v1/media/x"))
+        XCTAssertEqual(out.value(forHTTPHeaderField: "Authorization"), "Bearer secret")
+    }
+}
+#endif

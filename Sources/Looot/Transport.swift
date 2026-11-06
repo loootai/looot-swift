@@ -80,6 +80,9 @@ public struct URLSessionTransport: HTTPTransport, @unchecked Sendable {
                     }
                     cont.resume(returning: HTTPResponse(status: http.statusCode, headers: headers, body: data ?? Data()))
                 }
+                #if canImport(Darwin)
+                task.delegate = RedirectGuard()
+                #endif
                 box.set(task)
                 task.resume()
             }
@@ -108,3 +111,27 @@ private final class TaskBox: @unchecked Sendable {
         task?.cancel()
     }
 }
+
+#if canImport(Darwin)
+/// Drops the `Authorization` header when a redirect leaves the original host, so the
+/// token never reaches a third-party server (for example a storage bucket).
+final class RedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(Self.guarded(request, from: task.originalRequest?.url))
+    }
+
+    static func guarded(_ request: URLRequest, from original: URL?) -> URLRequest {
+        var next = request
+        let sameOrigin = original?.host?.lowercased() == request.url?.host?.lowercased()
+            && original?.scheme?.lowercased() == request.url?.scheme?.lowercased()
+        if !sameOrigin { next.setValue(nil, forHTTPHeaderField: "Authorization") }
+        return next
+    }
+}
+#endif
